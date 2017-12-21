@@ -1,0 +1,3 @@
+rootProject.name = 'BestAp'
+
+include ':app'
