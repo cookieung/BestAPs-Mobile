@@ -54,7 +54,13 @@ class Login extends Component {
 
 	componentWillUpdate(nextProps, nextState) {
 		if (this.state != nextState)
-      this.props.handleDataLogin(nextState.username, nextState.password);
+    {
+      if(this.state.route === 'Login'){
+        this.props.handleDataLogin(nextState);
+      }else if(this.state.route === 'SignUp'){
+        this.props.handleDataSignUp(nextState);
+      }
+    }
 	}
 
 
@@ -69,8 +75,11 @@ class Login extends Component {
   }
 
   render () {
+
       let alt = (this.state.route === 'Login') ? 'SignUp' : 'Login';
-      return (
+      
+      if(this.state.route === "SignUp"){
+        return (
           <ScrollView style={{padding: 20}}>
               <Text style={{fontSize: 27}}>{this.state.route}</Text>
               <TextInput 
@@ -93,6 +102,33 @@ class Login extends Component {
               <Text style={{fontSize: 16, color: 'blue'}} onPress={(e) => this.toggleRoute(e)}>{alt}</Text>
           </ScrollView>
       );
+      }
+      else if(this.state.route === "Login" )
+      {
+        return (
+          <ScrollView style={{padding: 20}}>
+              <Text style={{fontSize: 27}}>{this.state.route}</Text>
+              <TextInput 
+                  placeholder='Username'
+                  autoCapitalize='none'
+                  autoCorrect={false} 
+                  autoFocus={true} 
+                  keyboardType='email-address'
+                  value={this.state.username} 
+                  onChangeText={(text) => this.setState({ username: text })} />
+              <TextInput 
+                  placeholder='Password'
+                  autoCapitalize='none'
+                  autoCorrect={false} 
+                  secureTextEntry={true} 
+                  value={this.state.password} 
+                  onChangeText={(text) => this.setState({ password: text })} />
+              <View style={{margin: 7}}/>
+              <Button onPress={(e) => this.userLogin(e)} title={this.state.route}/>
+              <Text style={{fontSize: 16, color: 'blue'}} onPress={(e) => this.toggleRoute(e)}>{alt}</Text>
+          </ScrollView>
+      );
+    }
   }
 
 
@@ -110,6 +146,7 @@ export default class App extends Component<{}> {
       password: ''
     }
     this.doLogin = this.doLogin.bind(this);
+    this.doLogout = this.doLogout.bind(this);
   }
 
   doLogin(){
@@ -117,6 +154,15 @@ export default class App extends Component<{}> {
       isLogin: true
     });
     Alert.alert("handle Login"+ this.state.username);
+  }
+
+  doLogout(){
+    this.setState({
+      isLogin: false,
+      username: '',
+      password: ''
+    });
+    Alert.alert("handle Logout");
   }
 
   handleLogin(name,pass){
@@ -129,11 +175,11 @@ export default class App extends Component<{}> {
 
   render() {
     if (this.state.isLogin) {
-      return <Secured username={this.state.username}/>;
+      return <Secured username={this.state.username} onLogout={this.doLogout}/>;
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
-      handleDataLogin={(username,password) => this.handleLogin(username,password)}
+      handleDataLogin={(nextState) => this.handleLogin(nextState.username,nextState.password)}
       onLogin={this.doLogin}/>;
     }
   }
