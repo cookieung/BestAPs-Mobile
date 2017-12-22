@@ -109,6 +109,14 @@ export default class App extends Component<{}> {
       username:'',
       password: ''
     }
+    this.doLogin = this.doLogin.bind(this);
+  }
+
+  doLogin(){
+    this.setState({
+      isLogin: true
+    });
+    Alert.alert("handle Login"+ this.state.username);
   }
 
   handleLogin(name,pass){
@@ -116,17 +124,17 @@ export default class App extends Component<{}> {
       username : name,
       password: pass
     });
-    Alert.alert("handle Login"+ this.state.username);
+
   }
 
   render() {
-    if (this.props.isLoggedIn) {
-      return <Secured />;
+    if (this.state.isLogin) {
+      return <Secured username={this.state.username}/>;
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
-      handleDataLogin={(username,password) => this.setState({username: username,password: password})}
-      onLogin={(username,password) => this.handleLogin(username,password)}/>;
+      handleDataLogin={(username,password) => this.handleLogin(username,password)}
+      onLogin={this.doLogin}/>;
     }
   }
 }
