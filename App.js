@@ -65,7 +65,11 @@ class Login extends Component {
 
 
   userLogin(e){
-    this.props.onLogin();
+    this.props.onLogin(e);
+  }
+
+  userSignUp(e){
+    this.props.onSignUp(e);
   }
 
   toggleRoute(e){
@@ -78,7 +82,7 @@ class Login extends Component {
 
       let alt = (this.state.route === 'Login') ? 'SignUp' : 'Login';
       
-      if(this.state.route === "SignUp"){
+      if(this.state.route === 'SignUp'){
         return (
           <ScrollView style={{padding: 20}}>
               <Text style={{fontSize: 27}}>{this.state.route}</Text>
@@ -97,8 +101,24 @@ class Login extends Component {
                   secureTextEntry={true} 
                   value={this.state.password} 
                   onChangeText={(text) => this.setState({ password: text })} />
+              <TextInput 
+                  placeholder='Firstname'
+                  autoCapitalize='none'
+                  autoCorrect={false} 
+                  autoFocus={true} 
+                  keyboardType='default'
+                  value={this.state.firstname} 
+                  onChangeText={(text) => this.setState({ firstname: text })} />
+              <TextInput 
+                  placeholder='Lastname'
+                  autoCapitalize='none'
+                  autoCorrect={false} 
+                  autoFocus={true} 
+                  keyboardType='default'
+                  value={this.state.lastname} 
+                  onChangeText={(text) => this.setState({ lastname: text })} />
               <View style={{margin: 7}}/>
-              <Button onPress={(e) => this.userLogin(e)} title={this.state.route}/>
+              <Button onPress={(e) => this.userSignUp(e)} title={this.state.route}/>
               <Text style={{fontSize: 16, color: 'blue'}} onPress={(e) => this.toggleRoute(e)}>{alt}</Text>
           </ScrollView>
       );
@@ -165,12 +185,27 @@ export default class App extends Component<{}> {
     Alert.alert("handle Logout");
   }
 
-  handleLogin(name,pass){
+  handleLogin(state){
     this.setState({
-      username : name,
-      password: pass
+      username : state.username,
+      password: state.password
     });
 
+  }
+
+  handleSignUp(state){
+    this.setState({
+      username : state.username,
+      password: state.password,
+      firstname: state.firstname,
+      lastname: state.lastname
+    });
+
+  }
+
+  doSignUp(e){
+    Alert.alert("Create Account"+ this.state.firstname);
+    e.preventDefault();
   }
 
   render() {
@@ -179,8 +214,9 @@ export default class App extends Component<{}> {
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
-      handleDataLogin={(nextState) => this.handleLogin(nextState.username,nextState.password)}
-      onLogin={this.doLogin}/>;
+      handleDataLogin={(nextState) => this.handleLogin(nextState)}
+      handleDataSignUp={(nextState) => this.handleSignUp(nextState)}
+      onLogin={this.doLogin} onSignUp={(e) => this.doSignUp(e)}/>;
     }
   }
 }
