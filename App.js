@@ -13,7 +13,9 @@ import {
   TextInput,
   Button,
   ScrollView,
-  Alert
+  Alert,
+  ListView,
+  Image
 } from 'react-native';
 
 const instructions = Platform.select({
@@ -22,6 +24,34 @@ const instructions = Platform.select({
   android: 'Double tap R on your keyboard to reload,\n' +
     'Shake or press menu button for dev menu',
 });
+
+
+class History extends Component {
+
+  render(){
+    return (<MyListView />);
+  }
+}
+
+
+class MyListView extends Component {
+  constructor() {
+    super();
+    const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    this.state = {
+      dataSource: ds.cloneWithRows([{name: "banana", date: "10/11/12"}, {name: "apple", date: "10/11/12"}]),
+    };
+  }
+
+  render() {
+    return (
+      <ListView
+        dataSource={this.state.dataSource}
+        renderRow={(rowData) => <Text>{rowData.name+"\n"+rowData.date}</Text>}
+      />
+    );
+  }
+}
 
 class Secured extends Component {
   userLogout(e) {
@@ -33,9 +63,30 @@ class Secured extends Component {
       return (
           <ScrollView style={{padding: 20}}>
               <Text style={{fontSize: 27}}>
-                  {`Welcome ${this.props.username}`}
+                  {`Welcome ${this.props.firstname}`}
               </Text>
-              <View style={{margin: 20}}/>
+              <View style={{
+                padding: 10,
+                justifyContent: 'center',
+                alignItems: 'center'}}>
+              <Image
+                style={{width: 150, height: 150}}
+                source={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}}
+              />
+              </View>
+              <Text style={{fontSize: 23}}>
+                  {`${this.props.title} ${this.props.firstname} ${this.props.lastname}`}
+              </Text>
+              <Text style={{fontSize: 21}}>
+                  {`Mobile : ${this.props.username}`}
+              </Text>
+              <Text style={{fontSize: 21}}>
+                  {`Email : ${this.props.email}`}
+              </Text>
+              <Text style={{fontSize: 21}}>
+                  {`Address : ${this.props.address}`}
+              </Text>
+              <History />
               <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
           </ScrollView>
       );
