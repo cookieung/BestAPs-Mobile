@@ -112,11 +112,56 @@ class MyListView extends Component {
 
 class Secured extends Component {
 
-  constructor(){
-    super();
+  constructor(props){
+    super(props);
     this.state = {
       viewHistory : false
     }
+
+
+    this.refAuth = this.props.currentUser;
+    this.refHistory = firebase.database().ref().child('history').child(this.props.currentUser.userId);
+  }
+
+  componentDidMount(){
+    this.profile = this.getProfile(this.refAuth);
+    Alert.alert(this.profile.username+"");;
+    this.history = this.getHistory(this.refHistory);
+  }
+
+  componentWillMount(){
+    this.profile = this.getProfile(this.refAuth);
+    // this.history = this.getHistory(this.refHistory);
+  }
+
+  getProfile(refAuth){
+    let profile = {
+      userId: this.props.currentUser.userId,
+      username: this.props.currentUser.username,
+      password: this.props.currentUser.password,
+      firstname: this.props.currentUser.firstname,
+      lastname: this.props.currentUser.lastname,
+      email: this.props.currentUser.email,
+    };
+    return profile;
+
+}
+
+getHistory(refHistory){
+          let history = [];
+          refHistory.on('value',(snap) => {
+  
+            snap.forEach((child) => {
+              history.push({
+                userId : child.val().userId,
+                carbon_footprint : child.val().carbon_footprint,
+                activity : child.val().activity,
+                _key: child.key
+              });
+            });
+          });
+          return history;
+      
   }
 
   userLogout(e) {
@@ -136,7 +181,7 @@ class Secured extends Component {
         return (
           <ScrollView style={{padding: 20}}>
           <Text style={{fontSize: 27}}>
-              {`History ${this.props.firstname}`}
+              {`History ${this.profile.username}`}
           </Text>
           <History />
           <View style={{
@@ -153,7 +198,7 @@ class Secured extends Component {
       return (
           <ScrollView style={{padding: 20}}>
               <Text style={{fontSize: 27}}>
-                  {`Welcome ${this.props.firstname}`}
+                  {`Welcome ${this.profile.username}`}
               </Text>
               <View style={{
                 padding: 10,
@@ -325,7 +370,12 @@ export default class App extends Component<{}> {
 
           snap.forEach((child) => {
             auths.push({
-              title : child.val().title,
+              userId: child.val().userId,
+              username: child.val().username,
+              password: child.val().password,
+              firstname: child.val().firstname,
+              lastname: child.val().lastname,
+              email: child.val().email,
               _key: child.key
             });
           });
@@ -340,9 +390,22 @@ export default class App extends Component<{}> {
     let userId = this.auths.length +1;
     
     firebase.database().ref('auth/' + userId+'/').set({
-      id: userId,
-      carbon_footprint: 0,
-      auth: data
+      userId: userId,
+      username: data.username,
+      password: data.password,
+      firstname: data.firstname,
+      lastname: data.lastname,
+      email: "fake" 
+    });
+
+    firebase.database().ref('history/' + userId+'/').set({
+      userId : userId,
+      carbon_footprint : 0,
+      activity : [ {
+        id : 1,
+        date : "1.1.11",
+        name : "Activity1"
+    }]
     });
   }
 
@@ -364,46 +427,36 @@ export default class App extends Component<{}> {
     
 
     this.auths.forEach((auth) => {
-      Alert.alert(auth.title+"");
-      // if((auth.auth.username === this.state.username) && (auth.auth.password === this.state.password)) {
-      //   this.setState({
-      //     isLogin: true
-      //   });
-      // }
+      if((auth.username === this.state.inputs.username) && (auth.password === this.state.inputs.password)) {
+        Alert.alert("handle Success");
+        this.setState({
+          isLogin: true,
+          currentSession: auth
+        });
+      }else{
+        Alert.alert("Your username or password invalid!!");
+      }
     });
 
     
-    Alert.alert("handle Login"+ this.state.username+", "+this.state.isLogin);
+    
   }
 
   doLogout(){
     this.setState({
       isLogin: false,
-      username: '',
-      password: ''
+      currentSession : ''
     });
     Alert.alert("handle Logout");
   }
 
-  handleLogin(state){
+  handleChange(state){
     this.setState({
-      username : state.username,
-      password: state.password,
       inputs: state
     });
 
   }
 
-  handleSignUp(state){
-    this.setState({
-      username : state.username,
-      password: state.password,
-      firstname: state.firstname,
-      lastname: state.lastname,
-      inputs: state
-    });
-
-  }
 
   doSignUp(e){
     this.writeUserData(this.state.inputs);
@@ -414,12 +467,12 @@ export default class App extends Component<{}> {
 
   render() {
     if (this.state.isLogin) {
-      return <Secured username={this.state.username} onLogout={this.doLogout}/>;
+      return <Secured currentUser={this.state.currentSession}/>;
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
-      handleDataLogin={(nextState) => this.handleLogin(nextState)}
-      handleDataSignUp={(nextState) => this.handleSignUp(nextState)}
+      handleDataLogin={(nextState) => this.handleChange(nextState)}
+      handleDataSignUp={(nextState) => this.handleChange(nextState)}
       onLogin={this.doLogin} onSignUp={(e) => this.doSignUp(e)}/>;
     }
   }
