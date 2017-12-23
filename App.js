@@ -5,6 +5,7 @@
  */
 
 import React, { Component } from 'react';
+import firebase from './firebase';
 import {
   Platform,
   StyleSheet,
@@ -15,7 +16,8 @@ import {
   ScrollView,
   Alert,
   ListView,
-  Image
+  Image,
+  TouchableHighlight
 } from 'react-native';
 
 const instructions = Platform.select({
@@ -35,31 +37,119 @@ class History extends Component {
 
 
 class MyListView extends Component {
+  
   constructor() {
     super();
     const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     this.state = {
-      dataSource: ds.cloneWithRows([{name: "banana", date: "10/11/12"}, {name: "apple", date: "10/11/12"}]),
+      dataSource: ds
     };
+
+    this.itemsRef = firebase.database().ref().child('auth').child(0).child('activity');
+
+    this.renderRow = this.renderRow.bind(this);
+    this.pressRow = this.pressRow.bind(this);
   }
 
+  componentWillMount(){
+    this.getItems(this.itemsRef);
+  }
+
+  componentDidMount(){
+    this.getItems(this.itemsRef);
+  }
+
+  getItems(itemsRef){
+
+    // let items = [{title:'Item 1'},{title: 'Item 2'}]
+
+    itemsRef.on('value',(snap) => {
+      let items = [];
+      snap.forEach((child) => {
+        items.push({
+          title : child.val().name,
+          date : child.val().date,
+          _key: child.key
+        });
+      });
+      this.setState({
+        dataSource: this.state.dataSource.cloneWithRows(items)
+      });
+    });
+
+
+
+  }
+
+  pressRow(item){
+    Alert.alert("Click "+item);
+  }
+
+  renderRow(item){
+    return(
+      <TouchableHighlight onPress={() =>{
+        this.pressRow(item);
+      }}>
+        <View style={styles.card}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text>{item.date}</Text>
+        </View>
+      </TouchableHighlight>
+    );
+  }
+
+
+  
   render() {
     return (
       <ListView
         dataSource={this.state.dataSource}
-        renderRow={(rowData) => <Text>{rowData.name+"\n"+rowData.date}</Text>}
+        renderRow={this.renderRow}
       />
     );
   }
 }
 
 class Secured extends Component {
+
+  constructor(){
+    super();
+    this.state = {
+      viewHistory : false
+    }
+  }
+
   userLogout(e) {
       this.props.onLogout();
       e.preventDefault();
   }
+
+  switchToHistory(e) {
+      this.setState({
+        viewHistory: !this.state.viewHistory
+      });
+  }
    
   render() {
+
+      if(this.state.viewHistory){
+        return (
+          <ScrollView style={{padding: 20}}>
+          <Text style={{fontSize: 27}}>
+              {`History ${this.props.firstname}`}
+          </Text>
+          <History />
+          <View style={{
+                padding: 10,
+                justifyContent: 'center',
+                alignItems: 'center'}}>
+                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Switch"/>
+                <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
+          </View>
+      </ScrollView>
+        );
+      }
+
       return (
           <ScrollView style={{padding: 20}}>
               <Text style={{fontSize: 27}}>
@@ -74,20 +164,14 @@ class Secured extends Component {
                 source={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}}
               />
               </View>
-              <Text style={{fontSize: 23}}>
-                  {`${this.props.title} ${this.props.firstname} ${this.props.lastname}`}
-              </Text>
-              <Text style={{fontSize: 21}}>
-                  {`Mobile : ${this.props.username}`}
-              </Text>
-              <Text style={{fontSize: 21}}>
-                  {`Email : ${this.props.email}`}
-              </Text>
-              <Text style={{fontSize: 21}}>
-                  {`Address : ${this.props.address}`}
-              </Text>
-              <History />
-              <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
+              <View style={{
+                padding: 10,
+                justifyContent: 'center',
+                alignItems: 'center'}}>
+                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Switch"/>
+                <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
+              </View>
+
           </ScrollView>
       );
   }
@@ -216,15 +300,80 @@ export default class App extends Component<{}> {
       username:'',
       password: ''
     }
+
+    this.ref = firebase.database().ref().child('auth');
+
     this.doLogin = this.doLogin.bind(this);
     this.doLogout = this.doLogout.bind(this);
   }
 
-  doLogin(){
-    this.setState({
-      isLogin: true
+  
+  componentWillMount(){
+    this.auths = this.getAuths(this.ref);
+  }
+
+  componentDidMount(){
+    this.auths = this.getAuths(this.ref);
+  }
+
+
+  getAuths(itemsRef){
+    
+        // let items = [{title:'Item 1'},{title: 'Item 2'}]
+        let auths = [];
+        itemsRef.on('value',(snap) => {
+
+          snap.forEach((child) => {
+            auths.push({
+              title : child.val().title,
+              _key: child.key
+            });
+          });
+        });
+        return auths;
+    
+    
+  }
+
+  writeUserData(data) {
+
+    let userId = this.auths.length +1;
+    
+    firebase.database().ref('auth/' + userId+'/').set({
+      id: userId,
+      carbon_footprint: 0,
+      auth: data
     });
-    Alert.alert("handle Login"+ this.state.username);
+  }
+
+
+
+  addActivity(data) {
+    
+        let userId = this.auths.length;
+        
+        firebase.database().ref('auth/' + userId+'/').set({
+          id: userId,
+          carbon_footprint: 0,
+          auth: data
+        });
+  }
+    
+
+  doLogin(){
+    
+
+    this.auths.forEach((auth) => {
+      Alert.alert(auth.title+"");
+      // if((auth.auth.username === this.state.username) && (auth.auth.password === this.state.password)) {
+      //   this.setState({
+      //     isLogin: true
+      //   });
+      // }
+    });
+
+    
+    Alert.alert("handle Login"+ this.state.username+", "+this.state.isLogin);
   }
 
   doLogout(){
@@ -239,7 +388,8 @@ export default class App extends Component<{}> {
   handleLogin(state){
     this.setState({
       username : state.username,
-      password: state.password
+      password: state.password,
+      inputs: state
     });
 
   }
@@ -249,12 +399,15 @@ export default class App extends Component<{}> {
       username : state.username,
       password: state.password,
       firstname: state.firstname,
-      lastname: state.lastname
+      lastname: state.lastname,
+      inputs: state
     });
 
   }
 
   doSignUp(e){
+    this.writeUserData(this.state.inputs);
+    
     Alert.alert("Create Account"+ this.state.firstname);
     e.preventDefault();
   }
@@ -279,14 +432,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+  card:{
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 5
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+  title: {
+    fontSize: 20
+  }
 });
