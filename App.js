@@ -28,7 +28,7 @@ const instructions = Platform.select({
 });
 
 
-class History extends Component {
+class ActivityHistory extends Component {
 
   render(){
     return (<MyListView activity={this.props.activity}/>);
@@ -103,7 +103,6 @@ class Secured extends Component {
       viewHistory : false
     }
 
-    Alert.alert(this.props.histories+"");
 
     this.refAuth = this.props.currentUser;
   }
@@ -117,7 +116,6 @@ class Secured extends Component {
     
     
           snap.forEach((child) => {
-            Alert.alert(child.val() +" snap"+ child.key);
             this.setState({
               [child.key] : child.val()
             });
@@ -170,12 +168,12 @@ class Secured extends Component {
           <Text style={{fontSize: 27}}>
               {`History ${this.profile.username}`}
           </Text>
-          <History activity={this.state.activity}/>
+          <ActivityHistory activity={this.state.activity}/>
           <View style={{
                 padding: 10,
                 justifyContent: 'center',
                 alignItems: 'center'}}>
-                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Switch"/>
+                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Profile"/>
                 <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
           </View>
       </ScrollView>
@@ -203,7 +201,7 @@ class Secured extends Component {
                 padding: 10,
                 justifyContent: 'center',
                 alignItems: 'center'}}>
-                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Switch"/>
+                <Button color="#841584" onPress={(e) => this.switchToHistory(e)} title="Activities"/>
                 <Button onPress={(e) => this.userLogout(e)} title="Logout"/>
               </View>
 
@@ -412,24 +410,33 @@ export default class App extends Component<{}> {
           auth: data
         });
   }
+
+  checkAccount(username,password){
+    for(let i = 0 ; i< this.auths.length ; i++){
+      let auth = this.auths[i];
+      if((auth.username === username) && (auth.password === password )) {
+        return auth;
+      }
+    }
+    return null;
+  }
     
 
   doLogin(){
-    
 
-    this.auths.forEach((auth) => {
-      if((auth.username === this.state.inputs.username) && (auth.password === this.state.inputs.password)) {
-        this.setState({
-          isLogin: true,
-          currentSession: auth
-        });
-        this.histories = this.ref.child('history').child(auth.userId);
-      }else{
-        Alert.alert("Your username or password invalid!!");
-      }
-    });
+    let auth = this.checkAccount(this.state.inputs.username,this.state.inputs.password);
 
-    
+
+    if(auth === null){
+      Alert.alert("Invalid Account");
+    }else{
+      this.setState({
+        isLogin: true,
+        currentSession: auth
+      });
+      this.histories = this.ref.child('history').child(auth.userId);
+    }
+        
     
   }
 
@@ -438,6 +445,7 @@ export default class App extends Component<{}> {
       isLogin: false,
       currentSession : ''
     });
+    this.histories = null;
     Alert.alert("handle Logout");
   }
 
@@ -453,12 +461,13 @@ export default class App extends Component<{}> {
     this.writeUserData(this.state.inputs);
     
     Alert.alert("Create Account"+ this.state.firstname);
+    this.doLogin();
     e.preventDefault();
   }
 
   render() {
     if (this.state.isLogin) {
-      return <Secured currentUser={this.state.currentSession} histories={this.histories}/>;
+      return <Secured currentUser={this.state.currentSession} histories={this.histories} onLogout={this.doLogout}/>;
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
