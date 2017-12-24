@@ -31,7 +31,7 @@ const instructions = Platform.select({
 class History extends Component {
 
   render(){
-    return (<MyListView />);
+    return (<MyListView activity={this.props.activity}/>);
   }
 }
 
@@ -45,39 +45,24 @@ class MyListView extends Component {
       dataSource: ds
     };
 
-    this.itemsRef = firebase.database().ref().child('auth').child(0).child('activity');
+
 
     this.renderRow = this.renderRow.bind(this);
     this.pressRow = this.pressRow.bind(this);
   }
 
   componentWillMount(){
-    this.getItems(this.itemsRef);
+    this.getItems(this.props.activity);
   }
 
   componentDidMount(){
-    this.getItems(this.itemsRef);
+    this.getItems(this.props.activity);
   }
 
   getItems(itemsRef){
-
-    // let items = [{title:'Item 1'},{title: 'Item 2'}]
-
-    itemsRef.on('value',(snap) => {
-      let items = [];
-      snap.forEach((child) => {
-        items.push({
-          title : child.val().name,
-          date : child.val().date,
-          _key: child.key
+        this.setState({
+          dataSource: this.state.dataSource.cloneWithRows(itemsRef)
         });
-      });
-      this.setState({
-        dataSource: this.state.dataSource.cloneWithRows(items)
-      });
-    });
-
-
 
   }
 
@@ -91,7 +76,7 @@ class MyListView extends Component {
         this.pressRow(item);
       }}>
         <View style={styles.card}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.title}>{item.name}</Text>
           <Text>{item.date}</Text>
         </View>
       </TouchableHighlight>
@@ -118,20 +103,36 @@ class Secured extends Component {
       viewHistory : false
     }
 
+    Alert.alert(this.props.histories+"");
 
     this.refAuth = this.props.currentUser;
-    this.refHistory = firebase.database().ref().child('history').child(this.props.currentUser.userId);
   }
 
+
+  getHistory(itemsRef){
+    
+    
+        let histories = [];
+        itemsRef.on('value',(snap) => {
+    
+    
+          snap.forEach((child) => {
+            Alert.alert(child.val() +" snap"+ child.key);
+            this.setState({
+              [child.key] : child.val()
+            });
+          });
+        });
+        
+        
+  }
+    
   componentDidMount(){
     this.profile = this.getProfile(this.refAuth);
-    Alert.alert(this.profile.username+"");;
-    this.history = this.getHistory(this.refHistory);
   }
 
   componentWillMount(){
     this.profile = this.getProfile(this.refAuth);
-    // this.history = this.getHistory(this.refHistory);
   }
 
   getProfile(refAuth){
@@ -143,26 +144,12 @@ class Secured extends Component {
       lastname: this.props.currentUser.lastname,
       email: this.props.currentUser.email,
     };
+    this.getHistory(this.props.histories);
     return profile;
 
 }
 
-getHistory(refHistory){
-          let history = [];
-          refHistory.on('value',(snap) => {
-  
-            snap.forEach((child) => {
-              history.push({
-                userId : child.val().userId,
-                carbon_footprint : child.val().carbon_footprint,
-                activity : child.val().activity,
-                _key: child.key
-              });
-            });
-          });
-          return history;
-      
-  }
+
 
   userLogout(e) {
       this.props.onLogout();
@@ -183,7 +170,7 @@ getHistory(refHistory){
           <Text style={{fontSize: 27}}>
               {`History ${this.profile.username}`}
           </Text>
-          <History />
+          <History activity={this.state.activity}/>
           <View style={{
                 padding: 10,
                 justifyContent: 'center',
@@ -209,6 +196,9 @@ getHistory(refHistory){
                 source={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}}
               />
               </View>
+              <Text style={{fontSize: 27}}>
+                  {`Carbon : ${this.state.carbon_footprint}`}
+              </Text>
               <View style={{
                 padding: 10,
                 justifyContent: 'center',
@@ -341,12 +331,10 @@ export default class App extends Component<{}> {
   constructor(props){
     super(props);
     this.state = {
-      isLogin : false,
-      username:'',
-      password: ''
+      isLogin : false
     }
 
-    this.ref = firebase.database().ref().child('auth');
+    this.ref = firebase.database().ref();
 
     this.doLogin = this.doLogin.bind(this);
     this.doLogout = this.doLogout.bind(this);
@@ -354,11 +342,13 @@ export default class App extends Component<{}> {
 
   
   componentWillMount(){
-    this.auths = this.getAuths(this.ref);
+    this.auths = this.getAuths(this.ref.child('auth'));
+
   }
 
   componentDidMount(){
-    this.auths = this.getAuths(this.ref);
+    this.auths = this.getAuths(this.ref.child('auth'));
+
   }
 
 
@@ -385,6 +375,7 @@ export default class App extends Component<{}> {
     
   }
 
+ 
   writeUserData(data) {
 
     let userId = this.auths.length +1;
@@ -428,11 +419,11 @@ export default class App extends Component<{}> {
 
     this.auths.forEach((auth) => {
       if((auth.username === this.state.inputs.username) && (auth.password === this.state.inputs.password)) {
-        Alert.alert("handle Success");
         this.setState({
           isLogin: true,
           currentSession: auth
         });
+        this.histories = this.ref.child('history').child(auth.userId);
       }else{
         Alert.alert("Your username or password invalid!!");
       }
@@ -467,7 +458,7 @@ export default class App extends Component<{}> {
 
   render() {
     if (this.state.isLogin) {
-      return <Secured currentUser={this.state.currentSession}/>;
+      return <Secured currentUser={this.state.currentSession} histories={this.histories}/>;
     } else {
       return <Login 
       isSuccess={this.state.isLogin} 
